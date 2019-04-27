@@ -2,6 +2,7 @@ package sidddharth.co.btc;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.widget.TextView;
@@ -35,6 +36,7 @@ public class MainActivity extends AppCompatActivity {
     TextView blockHeight;
     RecyclerView utxList;
     List<UTX> utxes;
+    UtxListAdapter utxListAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,11 +45,14 @@ public class MainActivity extends AppCompatActivity {
         webSocketConnectionStatusText = findViewById(R.id.ws_connection_status);
         setupNewBlockInfoUI();
         utxList = findViewById(R.id.utx_list);
-
+        utxListAdapter = new UtxListAdapter(this);
+        utxList.setLayoutManager(new LinearLayoutManager(this));
+        utxList.setAdapter(utxListAdapter);
         okHttpClient = new OkHttpClient.Builder()
                 .readTimeout(3, TimeUnit.SECONDS)
                 .build();
         Request request = new Request.Builder().url("wss://ws.blockchain.info/inv").build();
+
         WebSocket webSocket = okHttpClient.newWebSocket(request, new WebSocketListener() {
 
 
@@ -70,7 +75,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onFailure(WebSocket webSocket, Throwable t, Response response) {
                 super.onFailure(webSocket, t, response);
-                Log.d("WS status", "Socket connection failed");
+                Log.d("WS status", "Socket connection failed" + t.getMessage());
+
                 setWebSocketConnectionStatusText("Failed");
 
             }
@@ -115,7 +121,10 @@ public class MainActivity extends AppCompatActivity {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                utxes.add(utx);
+                if (utxListAdapter != null) {
+                    utxListAdapter.addUTX(utx);
+                }
+
             }
         });
     }
@@ -145,24 +154,26 @@ public class MainActivity extends AppCompatActivity {
 
     private NewBlock parseBlock(JSONObject jsonObject) {
         NewBlock newBlock = new NewBlock();
-        newBlock.setHash(jsonObject.optString("hash"));
-        newBlock.setHeight(jsonObject.optInt("height"));
-        newBlock.setReward(jsonObject.optDouble("reward"));
-        newBlock.setSize(jsonObject.optDouble("size"));
-        newBlock.setTotalBTCSent(jsonObject.optDouble("totalBTCSent"));
+        JSONObject info = jsonObject.optJSONObject("x");
+        newBlock.setHash(info.optString("hash"));
+        newBlock.setHeight(info.optInt("height"));
+        newBlock.setReward(info.optDouble("reward"));
+        newBlock.setSize(info.optDouble("size"));
+        newBlock.setTotalBTCSent(info.optDouble("totalBTCSent"));
         return newBlock;
     }
 
     private UTX parseUnConfirmedTransaction(JSONObject jsonObject) {
         UTX utx = new UTX();
-        utx.setTransactionHash(jsonObject.optString("hash"));
-        utx.setTimestamp(jsonObject.optLong("time"));
-        JSONArray inputsArray = jsonObject.optJSONArray("inputs");
-        long totalAmount = 0;
+        final JSONObject info = jsonObject.optJSONObject("x");
+        utx.setTransactionHash(info.optString("hash"));
+        utx.setTimestamp(info.optLong("time") * 1000);
+        JSONArray inputsArray = info.optJSONArray("inputs");
+        double totalAmount = 0;
         for (int i = 0; i < inputsArray.length(); i++) {
             JSONObject input = inputsArray.optJSONObject(i);
             if (input != null) {
-                long value = input.optLong("value");
+                double value = input.optJSONObject("prev_out").optDouble("value");
                 totalAmount += value;
             }
         }
