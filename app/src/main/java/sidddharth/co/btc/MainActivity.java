@@ -6,9 +6,11 @@ import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.widget.TextView;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
@@ -18,6 +20,7 @@ import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
 import okio.ByteString;
 import sidddharth.co.btc.models.NewBlock;
+import sidddharth.co.btc.models.UTX;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -31,6 +34,7 @@ public class MainActivity extends AppCompatActivity {
     TextView reward;
     TextView blockHeight;
     RecyclerView utxList;
+    List<UTX> utxes;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,7 +86,8 @@ public class MainActivity extends AppCompatActivity {
                         final NewBlock newBlock = parseBlock(jsonObject);
                         setNewBlockInfo(newBlock);
                     } else if (OP_UTX.equalsIgnoreCase(messageType)) {
-                        parseUnConfirmedTransaction(jsonObject);
+                        final UTX utx = parseUnConfirmedTransaction(jsonObject);
+                        addUTX(utx);
                     }
 
                 } catch (JSONException e) {
@@ -104,6 +109,15 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
+    }
+
+    private void addUTX(final UTX utx) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                utxes.add(utx);
+            }
+        });
     }
 
     private void setupNewBlockInfoUI() {
@@ -139,7 +153,22 @@ public class MainActivity extends AppCompatActivity {
         return newBlock;
     }
 
-    private void parseUnConfirmedTransaction(JSONObject jsonObject) {
+    private UTX parseUnConfirmedTransaction(JSONObject jsonObject) {
+        UTX utx = new UTX();
+        utx.setTransactionHash(jsonObject.optString("hash"));
+        utx.setTimestamp(jsonObject.optLong("time"));
+        JSONArray inputsArray = jsonObject.optJSONArray("inputs");
+        long totalAmount = 0;
+        for (int i = 0; i < inputsArray.length(); i++) {
+            JSONObject input = inputsArray.optJSONObject(i);
+            if (input != null) {
+                long value = input.optLong("value");
+                totalAmount += value;
+            }
+        }
+        utx.setTransactionAmnt(totalAmount);
+
+        return utx;
 
     }
 
