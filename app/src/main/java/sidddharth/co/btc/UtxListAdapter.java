@@ -10,6 +10,8 @@ import android.widget.TextView;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
@@ -55,8 +57,20 @@ public class UtxListAdapter extends RecyclerView.Adapter {
     public void addUTX(UTX utx) {
         if (utxList == null)
             utxList = new ArrayList<>();
+
+        Collections.sort(utxList, new Comparator<UTX>() {
+            @Override
+            public int compare(UTX o1, UTX o2) {
+                return (int) (o1.getTimestamp() - o2.getTimestamp());
+            }
+        });
+        if (utxList.size() == 5)
+            utxList.remove(0);
+
         utxList.add(utx);
-        notifyItemInserted(utxList.size() - 1);
+
+
+        notifyDataSetChanged();
     }
 
     class UtxItemViewHolder extends RecyclerView.ViewHolder {
