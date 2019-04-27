@@ -8,7 +8,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
 import sidddharth.co.btc.models.UTX;
 
@@ -35,14 +39,25 @@ public class UtxListAdapter extends RecyclerView.Adapter {
     }
 
     private String getLocalTime(long timestamp) {
-        return "";
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+        simpleDateFormat.setTimeZone(TimeZone.getTimeZone("IST"));
+        Date d = new Date(timestamp);
+        return simpleDateFormat.format(d);
     }
 
     @Override
     public int getItemCount() {
-        return 5;
+        if (utxList == null)
+            return 0;
+        return utxList.size();
     }
 
+    public void addUTX(UTX utx) {
+        if (utxList == null)
+            utxList = new ArrayList<>();
+        utxList.add(utx);
+        notifyItemInserted(utxList.size() - 1);
+    }
 
     class UtxItemViewHolder extends RecyclerView.ViewHolder {
         TextView utxHash;
