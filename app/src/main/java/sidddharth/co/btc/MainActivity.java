@@ -2,6 +2,7 @@ package sidddharth.co.btc;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.widget.TextView;
 
@@ -29,6 +30,7 @@ public class MainActivity extends AppCompatActivity {
     TextView blockSize;
     TextView reward;
     TextView blockHeight;
+    RecyclerView utxList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         webSocketConnectionStatusText = findViewById(R.id.ws_connection_status);
         setupNewBlockInfoUI();
+        utxList = findViewById(R.id.utx_list);
 
         okHttpClient = new OkHttpClient.Builder()
                 .readTimeout(3, TimeUnit.SECONDS)
